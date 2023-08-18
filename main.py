@@ -1,16 +1,24 @@
-# This is a sample Python script.
+import torch
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from models.transformers import CurveTransformer
+from utils.configs import config
+from utils.dataset import load_data
+from utils.seeds import same_seed
+from utils.train_model import train
+
+seed = 123456
+same_seed(seed)
+def main(lr, num_epochs, device, batch_size, input_dim, d_model, ffn_dim,
+         pred_hidden_dim, num_heads, num_layers, dropout):
+    train_iter, valid_iter, test_iter = load_data(batch_size=batch_size, seed=seed)
+    net = CurveTransformer(input_dim=input_dim, d_model=d_model, ffn_dim=ffn_dim,
+                           pred_hidden_dim=pred_hidden_dim, num_heads=num_heads,
+                           num_layers=num_layers, dropout=dropout)
+    total_params = sum(p.numel() for p in net.parameters())
+    print(f"Number of parameters: {total_params}")
+    train(net, train_iter, valid_iter, test_iter, lr=lr, num_epochs=num_epochs, device=torch.device(device))
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
 
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    main(**config)
