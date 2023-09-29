@@ -47,8 +47,8 @@ class PipeDataset(Dataset):
         return len(self.culve)
 
 def load_data(batch_size, seed, seq_len=256):
-    df_x = pd.read_csv(f'./dataset/x-dataset-{seq_len}.csv')
-    df_y = pd.read_csv(f'./dataset/y-dataset-{seq_len}.csv')
+    df_x = pd.read_csv(f'../dataset/x-dataset-{seq_len}.csv')
+    df_y = pd.read_csv(f'../dataset/y-dataset-{seq_len}.csv')
 
     # split data
     train_id, valid_id, test_id = train_valid_test_split(df_x, 0.1, 0.1, seed=seed)

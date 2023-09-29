@@ -6,7 +6,7 @@ from utils.dataset import load_data
 from utils.seeds import same_seed
 from utils.train_model import train
 
-seed = 123456
+seed = 0
 same_seed(seed)
 def main(lr, num_epochs, device, batch_size, input_dim, d_model, ffn_dim,
          pred_hidden_dim, num_heads, num_layers, dropout):
@@ -16,7 +16,8 @@ def main(lr, num_epochs, device, batch_size, input_dim, d_model, ffn_dim,
                            num_layers=num_layers, dropout=dropout)
     total_params = sum(p.numel() for p in net.parameters())
     print(f"Number of parameters: {total_params}")
-    train(net, train_iter, valid_iter, test_iter, lr=lr, num_epochs=num_epochs, device=torch.device(device))
+    train(net, train_iter, valid_iter, test_iter, lr=lr, num_epochs=num_epochs,
+          device=torch.device(device))
 
 
 

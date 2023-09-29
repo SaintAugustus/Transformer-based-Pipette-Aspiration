@@ -1,7 +1,7 @@
 
 config = {
     "lr": 1e-4,
-    "num_epochs": 5000,
+    "num_epochs": 2000,
     "device": "cpu",
     "batch_size": 64,
     "input_dim": 2,

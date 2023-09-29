@@ -1,4 +1,6 @@
 import math
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
 import os
@@ -48,8 +50,8 @@ def train(net, train_iter, valid_iter, test_iter, lr, num_epochs, device):
         mean_train_loss = sum(loss_record) / len(loss_record)
         mean_train_error = sum(error_record) / len(error_record)
 
-        mean_valid_loss, mean_valid_error, _, _ = valid_test(net, valid_iter, criterion, device)
-        mean_test_loss, mean_test_error, pred_list, y_list = valid_test(net, test_iter, criterion, device)
+        mean_valid_loss, mean_valid_error, _, _ = valid_test(net, valid_iter, criterion, device, type='test')
+        # mean_test_loss, mean_test_error, pred_list, y_list = test(net, test_iter, criterion, device)
 
         # Updata scheduler
         # if scheduler:
@@ -70,29 +72,47 @@ def train(net, train_iter, valid_iter, test_iter, lr, num_epochs, device):
 
         if mean_valid_loss < best_loss:
             best_loss = mean_valid_loss
-            torch.save(net.state_dict(), '../model_records/model.ckpt')
+            idx = epoch % 5
+            torch.save(net.state_dict(), f'../model_records/model_{idx}.ckpt')
             print(f'Saving model with loss {best_loss:.4f} '
                   f'and error {mean_valid_error:.4f}')
             early_stop_count = 0
         else:
             early_stop_count += 1
 
-        if early_stop_count >= 800:
+        if early_stop_count >= 500:
             print('\nModel is not improving, so we halt the training session.')
             return
 
 
 
 
-def valid_test(net, data_iter, criterion, device):
+def valid_test(net, data_iter, criterion, device, type='valid'):
+    if type == 'test':
+        nets, num_checkpt = [], 5
+        for idx in range(num_checkpt):
+            new_net = deepcopy(net)
+            new_net.load_state_dict(torch.load(f'../model_records/model_{idx}.ckpt'))
+            nets.append(new_net)
+
     net.eval()
     loss_record, error_record = [], []
     pred_list, y_list = [], []
     for X, tk, y in data_iter:
         X, tk, y = X.to(device), tk.to(device), y.to(device)
         with torch.no_grad():
-            pred = net(X, tk)
-            loss = criterion(pred, y)
+            if type == 'test':
+                preds, losses = [], []
+                for idx in range(num_checkpt):
+                    pred = nets[idx](X, tk)
+                    loss = criterion(pred, y)
+                    preds.append(pred)
+                    losses.append(loss)
+                pred = torch.mean(torch.stack(preds, dim=1), dim=1)
+                loss = torch.mean(torch.stack(losses))
+            else:
+                pred = net(X, tk)
+                loss = criterion(pred, y)
             error = torch.mean(torch.abs((pred - y) / y))
             loss_record.append(loss.detach().item())
             error_record.append(error.detach().item())
@@ -109,7 +129,7 @@ if __name__ == "__main__":
     # net = CurveTransformer(input_dim=2, embed_hidden_dim=4, d_model=32, ffw_hidden_dim=256,
     #                        pred_hidden_dim=128, num_heads=4, num_layers=4, dropout=0.1)
     net = CurveTransformer(input_dim=2, d_model=32, ffn_dim=128, pred_hidden_dim=16,
-                           num_heads=8, num_layers=2, dropout=0.5)
+                           num_heads=8, num_layers=2, dropout=0.1)
     total_params = sum(p.numel() for p in net.parameters())
     print(f"Number of parameters: {total_params}")
     train(net, train_iter, valid_iter, test_iter, lr=1e-4, num_epochs=500, device=torch.device('cpu'))
